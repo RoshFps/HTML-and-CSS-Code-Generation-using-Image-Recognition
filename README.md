@@ -47,7 +47,7 @@ This project takes a 'hand-drawn HTML page layout' image as an input from the us
 
 6. Go through each .py file and specify paths to the required files. Read the comments around the path variables to understand the requirements. 
 
-<img src='https://github.com/saigokul290/HTML-and-CSS-Code-Generation-using-Image-Recognition/symbols.png' width='400' align='centre'>
+<img width="917" alt="image" src="symbols.png">
 
 Draw the design using the symbols on a plain white (preferably A4 size) sheet and click a picture in decent lighting. Specify the path of the image in the `main.py` file run it using one line of code from your terminal.
  
