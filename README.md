@@ -50,6 +50,7 @@ This project takes a 'hand-drawn HTML page layout' image as an input from the us
 <img width="917" alt="image" src="symbols.png">
 
 Draw the design using the symbols on a plain white (preferably A4 size) sheet and click a picture in decent lighting. Specify the path of the image in the `main.py` file run it using one line of code from your terminal.
+<img width="917" alt="image" src="new_test_imgs/test_imgs_2.jpg">
  
 ```python
 python app.py
