@@ -4,7 +4,8 @@ from main import processImage
 from pprint import pprint
 import shutil
 import google.generativeai as genai
-genai.configure(api_key='AIzaSyAg6UtggTP8rYwWQ-oBhJQf7xDa7SyyhpE')
+from config import GEMINI_API_KEY
+genai.configure(api_key=GEMINI_API_KEY)
 gemini_model = genai.GenerativeModel('gemini-pro')
 chat = gemini_model.start_chat(history=[])
 app = Flask(__name__)
