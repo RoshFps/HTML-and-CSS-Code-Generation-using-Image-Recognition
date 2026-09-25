@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Result · Sketch to HTML{% endblock %}
+{% block content %}
+<h1>Your page is ready</h1>
+<p class="lead">
+  {% if html_page %}Each step of the conversion is shown below. Previews run in a sandbox, and you can download any step.
+  {% else %}No elements were detected. Try a sharper photo with darker lines on plain white paper.{% endif %}
+</p>
+
+<div class="steps">
+  <section class="panel">
+    <h2><span><span class="n">01</span> Your sketch</span></h2>
+    <div class="view"><img src="{{ input_image }}" alt="Uploaded sketch"></div>
+    <div class="foot"><a href="{{ input_image }}" download>Download</a></div>
+  </section>
+  <section class="panel">
+    <h2><span><span class="n">02</span> Detected elements</span></h2>
+    <div class="view"><img src="{{ output_image }}" alt="Sketch with detected elements outlined"></div>
+    <div class="foot"><a href="{{ output_image }}" download>Download</a></div>
+  </section>
+  <section class="panel">
+    <h2><span><span class="n">03</span> Generated HTML</span></h2>
+    <div class="view">
+      {% if html_page %}<iframe src="{{ html_page }}" sandbox title="Generated HTML preview"></iframe>
+      {% else %}<p class="empty">Nothing to show.</p>{% endif %}
+    </div>
+    <div class="foot">{% if html_page %}<a href="{{ html_page }}" download="page.html">Download .html</a>{% else %}&nbsp;{% endif %}</div>
+  </section>
+  <section class="panel">
+    <h2><span><span class="n">04</span> Styled page</span>{% if source %}<span class="tag">{{ 'AI CSS' if source == 'gemini' else 'Default CSS' }}</span>{% endif %}</h2>
+    <div class="view">
+      {% if styled_page %}<iframe src="{{ styled_page }}" sandbox title="Styled page preview"></iframe>
+      {% else %}<p class="empty">Nothing to show.</p>{% endif %}
+    </div>
+    <div class="foot">{% if styled_page %}<a href="{{ styled_page }}" download="styled-page.html">Download .html</a>{% else %}&nbsp;{% endif %}</div>
+  </section>
+</div>
+
+<div class="actions"><a class="btn ghost" href="{{ url_for('index') }}">Convert another sketch</a></div>
+{% endblock %}

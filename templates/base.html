@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Sketch to HTML{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500&family=Manrope:wght@400;600;800&display=swap">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <a class="brand" href="{{ url_for('index') }}">Sketch<span>→</span>HTML</a>
+      <nav><a href="https://github.com/RoshFps/HTML-and-CSS-Code-Generation-using-Image-Recognition" rel="noopener">Source on GitHub</a></nav>
+    </header>
+    {% block content %}{% endblock %}
+    <footer>Faster R-CNN element detection · TensorFlow Object Detection API · Flask</footer>
+  </div>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
