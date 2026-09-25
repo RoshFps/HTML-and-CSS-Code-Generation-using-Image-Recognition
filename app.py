@@ -1,57 +1,91 @@
-from flask import Flask, request, render_template
-from preprocess import preprocessing
-from main import processImage
-from pprint import pprint
+"""Flask web app: upload a hand-drawn sketch, get HTML and CSS back."""
+
+import logging
 import shutil
-import google.generativeai as genai
-from config import GEMINI_API_KEY
-genai.configure(api_key=GEMINI_API_KEY)
-gemini_model = genai.GenerativeModel('gemini-pro')
-chat = gemini_model.start_chat(history=[])
+
+from flask import Flask, render_template, request, url_for
+
+import config
+from css_gen import add_styles
+from uploads import UploadError, new_job_dir, save_upload
+
+logging.basicConfig(level=logging.INFO)
+log = logging.getLogger(__name__)
+
 app = Flask(__name__)
+app.config["MAX_CONTENT_LENGTH"] = config.MAX_UPLOAD_MB * 1024 * 1024
 
-@app.route('/')
+
+@app.after_request
+def security_headers(resp):
+    resp.headers.setdefault("X-Content-Type-Options", "nosniff")
+    resp.headers.setdefault("Referrer-Policy", "no-referrer")
+    resp.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
+    if resp.mimetype == "text/html" and request.endpoint != "static":
+        resp.headers.setdefault(
+            "Content-Security-Policy",
+            "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline' "
+            "https://fonts.googleapis.com; font-src https://fonts.gstatic.com; "
+            "script-src 'self' 'unsafe-inline'; frame-src 'self'; object-src 'none'; base-uri 'none'",
+        )
+    return resp
+
+
+@app.get("/")
 def index():
-    return render_template('index.html')
+    return render_template("index.html", max_mb=config.MAX_UPLOAD_MB)
 
-@app.route('/generate', methods=['POST', 'GET'])
+
+@app.post("/generate")
 def generate():
-    if request.method == 'POST':
-        img = request.form['File']
-        print(img)
-        path = 'new_test_imgs\\'+img
-        pprint(path)
+    job_dir = new_job_dir(config.RESULTS_DIR)
+    try:
+        input_path = save_upload(request.files.get("image"), job_dir)
+    except UploadError as exc:
+        shutil.rmtree(job_dir, ignore_errors=True)
+        return render_template("index.html", error=str(exc), max_mb=config.MAX_UPLOAD_MB), 400
 
-        shutil.copy(path, 'static')
-        processed_image=preprocessing(path)
-        processImage(processed_image)
+    try:
+        # Heavy imports (TensorFlow) are deferred so the app starts quickly.
+        from main import processImage
+        from preprocess import preprocessing
 
-        input_image = 'http://127.0.0.1:5000/static/'+img
-        output_image = 'http://127.0.0.1:5000/static/output.jpg'
-        html_page = 'http://127.0.0.1:5000/static/generated_code.html'
-        css_page = 'http://127.0.0.1:5000/static/generated_final_code.html'
-        
-        with open('static/generated_code.html', 'r') as file:  # r to open file in READ mode
-            html_as_string = file.read()
-            file.close()
+        edges = preprocessing(input_path, job_dir)
+        detections, html_path = processImage(edges, job_dir)
+    except FileNotFoundError as exc:
+        log.error("%s", exc)
+        return render_template("index.html", error="The detection model isn't installed on this server.",
+                               max_mb=config.MAX_UPLOAD_MB), 500
+    except Exception:
+        log.exception("Conversion failed")
+        return render_template("index.html", error="Something went wrong while reading the sketch. Try a clearer photo.",
+                               max_mb=config.MAX_UPLOAD_MB), 500
 
-        gemini_response = chat.send_message(html_as_string+' write style.css code for this html')
-        data = gemini_response.text
-        data = data.replace('```', '')
-        data = data.replace('css', '')
+    job = job_dir.name
+    url = lambda name: url_for("static", filename=f"results/{job}/{name}")  # noqa: E731
 
-        css = '<style>'
-        css += data
-        css += '</style>'
+    if html_path is None:
+        return render_template("result.html", input_image=url("input.png"), output_image=url(detections.name),
+                               html_page=None, styled_page=None, source=None)
 
-        html_as_string = html_as_string.replace('<link rel="stylesheet" type="text/css" href="http://127.0.0.1:5000/static/stylesheet.css">', css)
-        print(html_as_string)
-        with open('static/generated_final_code.html', 'w') as file:  # r to open file in READ mode
-            file.write(html_as_string)
-        file.close()
-        
-        return render_template('index1.html', input_image=input_image, output_image=output_image, html_page=html_page, css_page=css_page)
-    return render_template('index.html')
+    styled_html, source = add_styles(html_path.read_text(encoding="utf-8"))
+    (job_dir / "styled.html").write_text(styled_html, encoding="utf-8")
+
+    return render_template(
+        "result.html",
+        input_image=url("input.png"),
+        output_image=url(detections.name),
+        html_page=url("generated.html"),
+        styled_page=url("styled.html"),
+        source=source,
+    )
+
+
+@app.errorhandler(413)
+def too_large(_):
+    return render_template("index.html", error=f"That file is larger than {config.MAX_UPLOAD_MB} MB.",
+                           max_mb=config.MAX_UPLOAD_MB), 413
+
 
 if __name__ == "__main__":
-    app.run(debug=True, use_reloader=False)
+    app.run(host="127.0.0.1", debug=config.FLASK_DEBUG, use_reloader=False)
