@@ -1,59 +1,97 @@
-# Automatic HTML Code Generation from Images
+# HTML and CSS Generation from Hand-Drawn Sketches
 
-This project takes a 'hand-drawn HTML page layout' image as an input from the user and converts it into a functional HTML and css webpage!
+[![CI](https://github.com/RoshFps/HTML-and-CSS-Code-Generation-using-Image-Recognition/actions/workflows/ci.yml/badge.svg)](https://github.com/RoshFps/HTML-and-CSS-Code-Generation-using-Image-Recognition/actions/workflows/ci.yml)
+![Python](https://img.shields.io/badge/python-3.7%2B-blue)
+![TensorFlow](https://img.shields.io/badge/TensorFlow-Object%20Detection%20API-orange)
 
-## Installation Guide
+Draw a web form on paper, take a photo, and get a working HTML page back. A Faster R-CNN (ResNet-50) model trained on hand-drawn UI symbols detects each element. The elements are grouped into rows by position and turned into HTML, then styled with either a built-in stylesheet or CSS written by Google Gemini.
 
-1. Clone/Download the Official TensorFlow models GitHub repository:
+This started as our final-year university project.
 
-   [Go to Official Tensorflow models GitHub page](https://github.com/tensorflow/models)
-  
-2. Visit the /models/research/object_detection page and follow the setup instructions to install all the dependencies required to run the Object Detection files.
+<img width="700" alt="Symbols used for each element" src="symbols.png">
 
-   [Go to models/research/object_detection GitHub page](https://github.com/tensorflow/models/tree/master/research/object_detection)
-3. The library dependencies can be installed from the requirements.txt file using the following command:
+## How it works
+
+```
+photo ──► preprocess (resize 950×1000, dilate, Canny edges)
+      ──► Faster R-CNN detection (TextBox, Label, Button, CheckBox, RadioButton, Image)
+      ──► group element centres into rows (30 px tolerance), sort left→right
+      ──► HTML generation ──► styling (default CSS or Gemini) ──► sandboxed preview
+```
+
+| Module | Responsibility |
+| --- | --- |
+| `app.py` | Flask web app: upload, run the pipeline, show results |
+| `uploads.py` | Upload validation (type, size, real image check, re-encoding) |
+| `preprocess.py` | OpenCV preprocessing |
+| `main.py` | Model loading, inference, row grouping (also usable as a CLI) |
+| `script_gen.py` | HTML generation |
+| `css_gen.py` | Stylesheet generation and sanitising of AI output |
+| `config.py` | All paths and settings, read from the environment |
+| `create_record/` | Scripts to build TFRecords from labelled data |
+
+## Setup
+
+1. **Python environment**
 
    ```bash
+   python -m venv .venv && source .venv/bin/activate
    pip install -r requirements.txt
    ```
-   **INSTALL TENSORFLOW 1.15.0**
-   
-   (not listed in requirements.txt because there is no pip package for tf 1.15)
-   
-   Download a .whl file from the following link (considering your python version and operating system):
-   https://pypi.org/project/tensorflow/1.15.0/#files
-   
-   Install the .whl file using the the following command (update your pip before proceeding):
-   ```bash
-   pip install PATH_TO_FILE/name_of_file.whl
+
+2. **TensorFlow and the Object Detection API.** Install TensorFlow 1.15 (or TF 2.x, which the code uses through `tf.compat.v1`), then clone [tensorflow/models](https://github.com/tensorflow/models) and follow the [Object Detection API setup](https://github.com/tensorflow/models/tree/master/research/object_detection).
+
+3. **Model.** Download `frozen_inference_graph_816.pb` from [this link](https://www.dropbox.com/sh/r7m3p0qikumtjuc/AABKP8kGBUzE8-pJo-WqGWD9a?dl=0).
+
+4. **Configuration.** Copy `.env.example` to `.env` and set the paths:
+
+   ```ini
+   TF_MODELS_RESEARCH_DIR=/path/to/models/research
+   MODEL_PATH=/path/to/frozen_inference_graph_816.pb
+   GEMINI_API_KEY=            # optional
    ```
-   
-4. Replace the visualization_utils.py 
 
-   Go to the directory where you have downloaded the Official Tensorflow models repository. Find the 'utils' folder inside object_detection directory by navigating:
+   You no longer need to replace `visualization_utils.py` inside the TensorFlow models repo, because the modified copy in this repository is imported directly.
 
-   ```bash
-   DIR_WHERE_REPO_IS_CLONED/models/research/object_detection/utils/
-   ```
-  
-   Find the **visualization_utils.py** file inside utils directory and replace it with the **visualization_utils.py** file provided in this repository.
+## Usage
 
-5. Download the **frozen_inference_graph_816.pb** file from the link provided in the _how_to_download_trained_model.txt_  file. Alternatively, it can be downloaded using this [link](https://www.dropbox.com/sh/r7m3p0qikumtjuc/AABKP8kGBUzE8-pJo-WqGWD9a?dl=0). 
+**Web app**
 
-6. Go through each .py file and specify paths to the required files. Read the comments around the path variables to understand the requirements. 
-
-<img width="917" alt="image" src="symbols.png">
-
-Draw the design using the symbols on a plain white (preferably A4 size) sheet and click a picture in decent lighting. Specify the path of the image in the `main.py` file run it using one line of code from your terminal.
-
-<img width="917" alt="image" src="new_test_imgs/test_imgs_2.jpg">
- 
-```python
-python app.py
+```bash
+python app.py        # http://127.0.0.1:5000
 ```
-upload the file in the address 127.0.0.1
-Depending on the processing hardware, it might take some time to execute. The preprocessed image with detected elements is displayed to show which elements have been identified. This image can be closed by pressing any key after which, the webpage would automatically open in a new browser window. Generated HTML code can be found in _generated_code.html_  file in the specified directory.
-<img width="917" alt="image" src="https://github.com/saigokul290/HTML-and-CSS-Code-Generation-using-Image-Recognition/assets/87557049/b9439900-6655-4ac0-ba08-51b2dcabe8e9">
-<img width="952" alt="image" src="https://github.com/saigokul290/HTML-and-CSS-Code-Generation-using-Image-Recognition/assets/87557049/e4ab5fb6-9249-406f-a0d0-b8cf1fd016d3">
 
+Upload a photo. The result page shows the sketch, the detected elements, the raw HTML and the styled page, each downloadable.
 
+**Command line**
+
+```bash
+python main.py new_test_imgs/test_imgs_2.jpg -o output/
+```
+
+## Security
+
+- **Secrets:** API keys come from environment variables or a git-ignored `.env`, never from source code.
+- **Uploads:** the extension is checked against an allow-list and the size is capped (default 8 MB). The file must decode as a PNG or JPEG, then it is re-encoded to strip metadata and payloads. It is saved under a fixed name in a random per-request directory, which prevents path traversal and stops one user's results from overwriting another's.
+- **AI output:** CSS from Gemini is treated as untrusted. Markdown fences are extracted, anything that could close the `<style>` tag is removed, and `@import` is stripped. Generated pages are previewed in sandboxed iframes.
+- **HTTP:** the app sends a Content Security Policy, `nosniff`, `Referrer-Policy` and frame-options headers. Debug mode is off unless `FLASK_DEBUG=1`, and the server binds to localhost.
+- **CI:** unit tests, `bandit` and `gitleaks` secret scanning run on every push.
+
+## Tests
+
+```bash
+pip install -r requirements-dev.txt
+python -m unittest discover -s tests -t . -v
+```
+
+The tests cover upload validation (including path traversal and disguised files), HTML generation and CSS sanitising. They don't need TensorFlow.
+
+## Example
+
+<img width="600" alt="Example sketch" src="new_test_imgs/test_imgs_2.jpg">
+
+<img width="917" alt="Result" src="https://github.com/saigokul290/HTML-and-CSS-Code-Generation-using-Image-Recognition/assets/87557049/b9439900-6655-4ac0-ba08-51b2dcabe8e9">
+
+## License
+
+MIT, see [LICENSE](LICENSE).
