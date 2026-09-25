@@ -1,117 +1,77 @@
-import os
+"""Turns the ordered list of detected UI elements into an HTML page."""
 
-def textbox_code():
-    l = '<input type=\"text\"> '
-    return l
+from pathlib import Path
+from typing import Iterable, List, Sequence
 
+BREAK = "BREAK"
 
-def label_code():
-    l = 'Label '
-    return l
-
-
-def radiobutton_code():
-    l = '<input type=\"radio\" name=\"n\" value=\"v\"> '
-    return l
-
-
-def checkbox_code():
-    l = '<input type=\"checkbox\"> '
-    return l
+# Inline SVG placeholder so generated pages don't depend on a running server.
+_IMAGE_PLACEHOLDER = (
+    "data:image/svg+xml;utf8,"
+    "<svg xmlns='http://www.w3.org/2000/svg' width='160' height='100'>"
+    "<rect width='100%' height='100%' fill='%23e5e7eb'/>"
+    "<text x='50%' y='55%' font-family='sans-serif' font-size='14' fill='%236b7280' "
+    "text-anchor='middle'>Image</text></svg>"
+)
 
 
-def button_code():
-    l = '<input type=\"submit\" value=\"Button\"> '
-    return l
+def element_html(name: str, index: int) -> str:
+    """HTML snippet for one detected element. ``index`` keeps ids unique."""
+    templates = {
+        "TextBox": f'<input type="text" id="field{index}" class="field" placeholder="Text">',
+        "Label": f'<label class="label" for="field{index + 1}">Label</label>',
+        "RadioButton": f'<label class="choice"><input type="radio" name="group"> Option {index}</label>',
+        "CheckBox": f'<label class="choice"><input type="checkbox"> Option {index}</label>',
+        "Button": '<button type="button" class="button">Button</button>',
+        "Image": f'<img class="image" src="{_IMAGE_PLACEHOLDER}" alt="Image placeholder" height="100">',
+    }
+    return templates.get(name, "")
 
 
-def image_code():
-    #specify the path where the dummy image is persent, if not in the same dir
-    l = '<img src="http://127.0.0.1:5000/static/dummy_image.png" height=50px alt=\"Image\"> '
-    return l
+def rows_from_elements(lines: Iterable[str]) -> List[List[str]]:
+    """Parse ``name,x,y`` lines separated by ``BREAK`` markers into rows of names."""
+    rows: List[List[str]] = [[]]
+    for raw in lines:
+        line = raw.strip()
+        if not line:
+            continue
+        if line == BREAK:
+            rows.append([])
+            continue
+        rows[-1].append(line.split(",", 1)[0])
+    return [r for r in rows if r]
 
 
-def break_code():
-    l = '\n<br><br>\n'
-    return l
+def render_page(rows: Sequence[Sequence[str]], title: str = "Generated page") -> str:
+    body = []
+    counter = 0
+    for row in rows:
+        parts = []
+        for name in row:
+            counter += 1
+            snippet = element_html(name, counter)
+            if snippet:
+                parts.append("      " + snippet)
+        if parts:
+            body.append('    <div class="row">\n' + "\n".join(parts) + "\n    </div>")
+    return (
+        "<!DOCTYPE html>\n"
+        '<html lang="en">\n'
+        "<head>\n"
+        '  <meta charset="utf-8">\n'
+        '  <meta name="viewport" content="width=device-width, initial-scale=1">\n'
+        f"  <title>{title}</title>\n"
+        "  <!-- STYLES -->\n"
+        "</head>\n"
+        "<body>\n"
+        '  <form class="page" onsubmit="return false">\n'
+        + "\n".join(body)
+        + "\n  </form>\n</body>\n</html>\n"
+    )
 
-def generate_html():
-    #path for storing the html file
-##    path='Automatic-HTML-Code-Generation\\'
-    #define the opening tags of html 
-    html=open('static/generated_code.html','w')
-    html.write('<HTML>\n<HEAD>\n')
-    #link the css file
-    #specify the full path in href if css not present in the same dir
-    html.write('<link rel="stylesheet" type="text/css" href="http://127.0.0.1:5000/static/stylesheet.css">\n')
-    html.write('<TITLE>Generated HTML Code</TITLE>\n')
-    html.write('</HEAD>\n<BODY>\n')
-    with open('temp.txt', 'r') as line:
-        print("hiiiiiiiiiiiiii")
-        lines=line.readlines()
-        for line in lines:
-            #split the line to obtain element_name, x and y
-            l=line.split(',')
-            #l=['element_name', x, y]
-            #generate code for the specific element
-            if(l[0]=='TextBox'):
-                c=textbox_code()
-            elif(l[0]=='Label'):
-                c=label_code()
-            elif(l[0]=='RadioButton'):
-                c=radiobutton_code()
-            elif(l[0]=='CheckBox'):
-                c=checkbox_code()
-            elif(l[0]=='Button'):
-                c=button_code()
-            elif(l[0]=='Image'):
-                c=image_code()
-            elif(l[0]=='BREAK\n'):
-                c=break_code()
-            else:
-                print('printing else code', l)
-            html.write(c)
-        
-    html.write('\n</BODY>\n</HTML>')
-    
-    #html script is generated
-    #destroy the temp file now
-    #change the path to temp file, if not in the same dir
-    os.remove('temp.txt')
-def generate_css():
-    css = open('static/generated_style.css', 'w')
-    css.write('/* Generated CSS Code */\n\n')
-    
-    # CSS for TextBox
-    css.write('input[type="text"] {\n')
-    css.write('\t/* Add your styling for TextBox here */\n')
-    css.write('}\n\n')
 
-    # CSS for Label
-    css.write('.label {\n')
-    css.write('\t/* Add your styling for Label here */\n')
-    css.write('}\n\n')
-
-    # CSS for RadioButton
-    css.write('input[type="radio"] {\n')
-    css.write('\t/* Add your styling for RadioButton here */\n')
-    css.write('}\n\n')
-
-    # CSS for CheckBox
-    css.write('input[type="checkbox"] {\n')
-    css.write('\t/* Add your styling for CheckBox here */\n')
-    css.write('}\n\n')
-
-    # CSS for Button
-    css.write('input[type="submit"] {\n')
-    css.write('\t/* Add your styling for Button here */\n')
-    css.write('}\n\n')
-
-    # CSS for Image
-    css.write('img {\n')
-    css.write('\t/* Add your styling for Image here */\n')
-    css.write('}\n\n')
-
-    css.close()
-#generate_css()
-#generate_html()
+def generate_html(elements_path: Path, out_path: Path) -> Path:
+    """Read the detector's element list and write the generated HTML page."""
+    rows = rows_from_elements(Path(elements_path).read_text(encoding="utf-8").splitlines())
+    Path(out_path).write_text(render_page(rows), encoding="utf-8")
+    return Path(out_path)

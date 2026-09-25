@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+*.pb
+static/results/
+TEMP_IMAGE/
+temp.txt
+.DS_Store

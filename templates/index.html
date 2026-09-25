@@ -1,204 +1,56 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.3/jquery.min.js"></script>
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
-    <style>
-@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;500;600;700&display=swap");
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+{% extends "base.html" %}
+{% block content %}
+<h1>Turn a hand-drawn sketch into a web page</h1>
+<p class="lead">Draw a form layout on paper with the symbols below, take a photo, and upload it.
+The model finds each element, arranges them into rows, and writes the HTML and CSS.</p>
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: "Poppins", sans-serif;
-}
+{% if error %}<div class="alert" role="alert">{{ error }}</div>{% endif %}
 
-.container {
-  height: 90vh;
-  padding-top: 10vh;
-}
-.contain {
-  height: 100vh;
-  width: 100%;
-  align-items: center;
-  display: flex;
-  justify-content: center;
-}
-
-.card {
-  /* border-radius: 10px; */
-  box-shadow: 0 5px 10px 0 rgba(0, 0, 0, 0.3);
-  width: 600px;
-  height: 260px;
-  background-color: #ffffff;
-  /* padding: 10px 30px 40px; */
-}
-
-.card h3 {
-  font-size: 22px;
-  font-weight: 600;
-  
-}
-
-.drop_box {
-  margin: 10px 0;
-  padding: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  /* border: 3px dotted #a3a3a3; */
-  border-radius: 5px;
-}
-
-.drop_box h2 {
-  font-size: 25px;
-  font-weight: 400;
-  color: #ffffff;
-}
-
-.drop_box p {
-  margin-top: 10px;
-  margin-bottom: 20px;
-  font-size: 12px;
-  color: #a3a3a3;
-}
-
-.btn {
-  text-decoration: none;
-  background-color: #005af0;
-  color: #ffffff;
-  padding: 10px 20px;
-  border: none;
-  outline: none;
-  transition: 0.3s;
-}
-
-.btn:hover{
-  text-decoration: none;
-  background-color: #ffffff;
-  color: #005af0;
-  padding: 10px 20px;
-  border: none;
-  outline: 1px solid #010101;
-}
-.form input {
-  margin: 10px 0;
-  width: 100%;
-  background-color: #e2e2e2;
-  border: none;
-  outline: none;
-  padding: 12px 20px;
-  border-radius: 4px;
-}
-*{
-  
-  background-image:url('http://127.0.0.1:5000/static/bag.jpg');
-  background-repeat: no-repeat;
-  background-size: cover;
-  background-attachment: fixed;
-  }
-
-  h3{
-    color: white;
-    text-align: center;
-  }
-    </style>
-</head>
-<body>  
-  <!-- </body> style="background-image: http://127.0.0.1:5000/static/bag.jpg;backg"> -->
-  <h5>.</h5>
-  
-  <!-- <h1 style="text-align: center; color:rgb(243, 242, 245); font-style: oblique;"><br><br><br><br><br><br><br>DRAW YOUR WEBPAGE </h1> -->
-  
-
-    <div class="contain">
-            <div class="card">
-              <!-- <h3>DRAW YOUR WEBPAGE</h3> -->
-              <div class="drop_box" style="color: #e2e2e2;">
-                <header>
-                  <h2>Select File here</h2>
-                </header>
-                <p style="color: #e2e2e2;">Files Supported: .png, .jpg, .jpeg</p>
-                <input type="file" hidden accept=".png, .jpg, .jpeg" id="fileID" style="display:none;">
-                <button class="btn">Choose File</button>
-              </div>
-        </div>
-    </div>
-<!-- 
-      <div class="container">
-        <div class="row" id="Box">
-          <div class="col-lg-4">
-                <h3>INPUT IMAGE</h3>
-                <img src="{{input_image}}" alt="" width="100%" height="400px" onload="Scrolling()">
-                <br>
-                <br><br>
-                <center>
-                  <a href="{{input_image}}" download>
-                    <button class="btn">Download</button>
-                  </a>
-                </center>
-          </div>
-          <div class="col-lg-4">
-            <h3>OUTPUT IMAGE</h3>
-            <img src="{{output_image}}" alt="" width="100%" height="400px">
-            <br>
-            <br><br>
-            <center>
-              <a href="{{output_image}}" download>
-                <button class="btn">Download</button>
-              </a>
-            </center>
-      </div>
-      <div class="col-lg-4">
-        <h3>HTML PAGE</h3>
-        <embed src="{{html_page}}" type="text/html" width="100%" height="400px">
-          <br>
-          <br><br>
-          <center>
-            <a href="{{html_page}}" download>
-              <button class="btn">Download</button>
-            </a>
-          </center>
+<form id="upload" action="{{ url_for('generate') }}" method="post" enctype="multipart/form-data">
+  <label class="drop" id="drop" for="image">
+    <input type="file" id="image" name="image" accept="image/png,image/jpeg" required>
+    <img class="preview" id="preview" alt="" hidden>
+    <strong id="drop-title">Drop your sketch here or click to choose</strong>
+    <small id="drop-sub">PNG or JPEG, up to {{ max_mb }} MB</small>
+  </label>
+  <div class="actions">
+    <button class="btn" id="submit" type="submit" disabled>Generate code</button>
+    <span class="busy" id="busy"><span class="spin"></span>Detecting elements… this can take up to a minute.</span>
   </div>
-      </div> -->
+</form>
 
-      <script>
-        const dropArea = document.querySelector(".drop_box"),
-  button = dropArea.querySelector("button"),
-  dragText = dropArea.querySelector("header"),
-  input = dropArea.querySelector("input");
-let file;
-var filename;
+<section class="legend" aria-label="Supported elements">
+  <div>Text box<code>TextBox</code></div>
+  <div>Label<code>Label</code></div>
+  <div>Button<code>Button</code></div>
+  <div>Check box<code>CheckBox</code></div>
+  <div>Radio button<code>RadioButton</code></div>
+  <div>Image<code>Image</code></div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+(() => {
+  const input = document.getElementById("image"), drop = document.getElementById("drop");
+  const preview = document.getElementById("preview"), submit = document.getElementById("submit");
+  const title = document.getElementById("drop-title"), sub = document.getElementById("drop-sub");
+  const maxBytes = {{ max_mb }} * 1024 * 1024;
 
-button.onclick = () => {
-  input.click();
-};
-
-input.addEventListener("change", function (e) {
-  var fileName = e.target.files[0].name;
-  let filedata = `
-    <form action="/generate" method="post">
-    <div class="form">
-    <h4>${fileName}</h4>
-    <input type="text" value="${fileName}" name = "File" hidden>
-    <button class="btn">Upload</button>
-    </div>
-    </form>`;
-  dropArea.innerHTML = filedata;
-});
-
-
-function Scrolling(){
-  const element = document.getElementById("Box");
-element.scrollIntoView({behavior: "smooth", block: "end", inline: "nearest"});
-}
-      </script>
-</body>
-</html>
+  function show(file) {
+    if (!file) return;
+    if (!/^image\/(png|jpeg)$/.test(file.type)) { sub.textContent = "Only PNG or JPEG images are supported."; submit.disabled = true; return; }
+    if (file.size > maxBytes) { sub.textContent = "That file is larger than {{ max_mb }} MB."; submit.disabled = true; return; }
+    preview.src = URL.createObjectURL(file); preview.hidden = false;
+    title.textContent = file.name; sub.textContent = "Click to choose a different image";
+    submit.disabled = false;
+  }
+  input.addEventListener("change", () => show(input.files[0]));
+  ["dragenter", "dragover"].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.add("over"); }));
+  ["dragleave", "drop"].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.remove("over"); }));
+  drop.addEventListener("drop", ev => { input.files = ev.dataTransfer.files; show(input.files[0]); });
+  document.getElementById("upload").addEventListener("submit", () => {
+    submit.disabled = true; document.getElementById("busy").classList.add("on");
+  });
+})();
+</script>
+{% endblock %}
