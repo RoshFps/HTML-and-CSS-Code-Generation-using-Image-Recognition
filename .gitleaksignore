@@ -1,0 +1,4 @@
+# Known leak: Gemini key hard-coded in the initial upload (removed from the code in PR #1).
+# The key must be revoked in Google AI Studio; these entries only stop CI from re-reporting history.
+43311db969563d423fa99a07775043e2c21db353:app.py:gcp-api-key:7
+43311db969563d423fa99a07775043e2c21db353:test.py:gcp-api-key:2
