@@ -1,0 +1,10 @@
+# Web app
+flask>=3.0
+Pillow>=10.3
+google-generativeai>=0.7   # optional: AI-generated CSS
+
+# Detection (install TensorFlow and the Object Detection API as described in the README)
+numpy
+opencv-python-headless
+matplotlib
+six
