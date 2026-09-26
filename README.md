@@ -6,8 +6,6 @@
 
 Draw a web form on paper, take a photo, and get a working HTML page back. A Faster R-CNN (ResNet-50) model trained on hand-drawn UI symbols detects each element. The elements are grouped into rows by position and turned into HTML, then styled with either a built-in stylesheet or CSS written by Google Gemini.
 
-This started as our final-year university project.
-
 <img width="700" alt="Symbols used for each element" src="symbols.png">
 
 ## How it works
